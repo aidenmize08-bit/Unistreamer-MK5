@@ -14,8 +14,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-      - run: gradle assembleDebug --no-daemon
+      - name: Build
+        run: |
+          unzip -oq StreamBrowser.zip -d unpacked
+          FILE=$(find unpacked -name settings.gradle.kts | head -n 1)
+          cd "$(dirname "$FILE")"
+          set +e
+          gradle assembleDebug --no-daemon --console=plain > "$GITHUB_WORKSPACE/build.log" 2>&1
+          STATUS=$?
+          echo "=== COMPILER ERRORS ==="
+          grep -E '^e: ' "$GITHUB_WORKSPACE/build.log" | head -30
+          exit $STATUS
       - uses: actions/upload-artifact@v4
         with:
           name: StreamBrowser-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "unpacked/**/build/outputs/apk/debug/*.apk"
